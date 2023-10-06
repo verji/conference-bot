@@ -16,11 +16,10 @@ limitations under the License.
 
 // TODO: Healthz
 // TODO: Timezones!! (Europe-Brussels)
-// TODO: Start webserver
 
 import { LogLevel, LogService, MatrixClient, SimpleFsStorageProvider, UserID } from "matrix-bot-sdk";
 import * as path from "path";
-import config, { IPentaScheduleBackendConfig } from "./config";
+import config, { IPentaScheduleBackendConfig, RunMode } from "./config";
 import { ICommand } from "./commands/ICommand";
 import { HelpCommand } from "./commands/HelpCommand";
 import { BuildCommand } from "./commands/BuildCommand";
@@ -91,6 +90,15 @@ let displayName;
 let userId;
 
 (async function () {
+    if (!RunMode[config.mode]) {
+        throw Error(`Incorrect mode '${config.mode}'`);
+    }
+
+    if (config.mode === RunMode.webserver) {
+        setupWebserver();
+        return;
+    }
+
     const backend = await loadBackend();
 
     const conference = new Conference(backend, config.conference.id, client);
@@ -257,9 +265,13 @@ function registerCommands(conference: Conference, ircBridge: IRCBridge | null) {
     });
 }
 
-function setupWebserver(scoreboard: Scoreboard) {
+/**
+ * 
+ * @param scoreboard 
+ */
+function setupWebserver(scoreboard?: Scoreboard) {
     const app = express();
-    const tmplPath = process.env.CONF_TEMPLATES_PATH || './srv';
+    const tmplPath = config.templatesPath || './srv';
     const engine = new Liquid({
         root: tmplPath,
         cache: process.env.NODE_ENV === 'production',
@@ -276,7 +288,10 @@ function setupWebserver(scoreboard: Scoreboard) {
     app.get('/widgets/hybrid.html', renderHybridWidget);
     app.post('/onpublish', rtmpRedirect);
     app.get('/healthz', renderHealthz);
-    app.get('/scoreboard/:roomId', (rq, rs) => renderScoreboard(rq, rs, scoreboard));
+    if (scoreboard) {
+        // Only load the scoreboard if we're the base application.
+        app.get('/scoreboard/:roomId', (rq, rs) => renderScoreboard(rq, rs, scoreboard));
+    }
     app.get('/make_hybrid', makeHybridWidget);
     app.listen(config.webserver.port, config.webserver.address, () => {
         LogService.info("web", `Webserver running at http://${config.webserver.address}:${config.webserver.port}`);

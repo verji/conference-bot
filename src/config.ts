@@ -21,6 +21,11 @@ import { IRCBridge, IRCBridgeOpts } from "./IRCBridge";
 import { Scheduler } from "./Scheduler";
 import { CheckInMap } from "./CheckInMap";
 
+export enum RunMode {
+    normal = "normal",
+    webserver = "webserver",
+}
+
 interface IConfig {
     homeserverUrl: string;
     accessToken: string;
@@ -74,6 +79,10 @@ interface IConfig {
         };
     };
     ircBridge: IRCBridgeOpts | null;
+
+    templatesPath: string;
+
+    mode: RunMode;
 
     RUNTIME: {
         client: MatrixClient;
@@ -138,4 +147,10 @@ export interface IPentaDbConfig {
     schedulePostBufferSeconds: number;
 }
 
-export default <IConfig>config;
+const liveConfig: IConfig = {
+    ...config,
+    mode: process.env.CONF_RUN_MODE ?? RunMode.normal,
+    templatesPath: process.env.CONF_TEMPLATES_PATH ?? config.templatesPath,
+}
+
+export default <IConfig>liveConfig;
