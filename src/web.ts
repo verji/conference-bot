@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import { Response, Request } from "express";
-import * as template from "string-template";
+import template from "./utils/template"
 import config from "./config";
 import { base32 } from "rfc4648";
 import { LogService } from "matrix-bot-sdk";
@@ -178,7 +178,8 @@ export async function rtmpRedirect(req: Request, res: Response) {
         });
         const ip = await dns.promises.resolve(hostname);
         const uri = template(config.livestream.onpublish.rtmpUrlTemplate, {
-            hostname: ip,
+            // Use first returned IP.
+            hostname: ip[0],
             saltedHash: sha256((await talk.getId()) + '.' + config.livestream.onpublish.salt),
         });
         return res.redirect(uri);

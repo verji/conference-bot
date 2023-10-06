@@ -21,8 +21,7 @@ import { Auditorium } from "./Auditorium";
 import config from "../config";
 import { MatrixClient } from "matrix-bot-sdk";
 import { Talk } from "./Talk";
-import * as template from "string-template";
-import { base32 } from "rfc4648";
+import template from "../utils/template";
 
 export interface ILayout {
     widgets: {
